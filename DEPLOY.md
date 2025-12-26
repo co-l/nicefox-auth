@@ -63,6 +63,8 @@ COOKIE_DOMAIN=.nicefox.net
 GOOGLE_CLIENT_ID=<from-google-console>
 GOOGLE_CLIENT_SECRET=<from-google-console>
 GOOGLE_CALLBACK_URL=https://auth.nicefox.net/api/auth/google/callback
+FRONTEND_URL=https://auth.nicefox.net
+
 ```
 
 ## 6. Start backend with pm2

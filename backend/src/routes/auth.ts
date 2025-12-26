@@ -22,7 +22,7 @@ const router = Router()
 const COOKIE_NAME = 'auth_token'
 
 // Store state -> redirect URL mapping (in production, use Redis or similar)
-const stateStore = new Map<string, { redirectUrl: string; expiresAt: number }>()
+const stateStore = new Map<string, { redirectUrl: string; tokenInUrl: boolean; expiresAt: number }>()
 
 // Clean up expired states periodically
 setInterval(() => {
@@ -37,6 +37,7 @@ setInterval(() => {
 // GET /api/auth/google - Initiate Google OAuth flow
 router.get('/google', (req: Request, res: Response) => {
   const redirectUrl = req.query.redirect as string | undefined
+  const tokenInUrl = req.query.token_in_url === 'true'
 
   // Validate redirect URL
   let finalRedirect = config.frontendUrl
@@ -53,6 +54,7 @@ router.get('/google', (req: Request, res: Response) => {
   const state = crypto.randomUUID()
   stateStore.set(state, {
     redirectUrl: finalRedirect,
+    tokenInUrl,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   })
 
@@ -104,8 +106,16 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     // Set cookie
     res.cookie(COOKIE_NAME, token, getCookieOptions())
 
+    // Build redirect URL, optionally with token
+    let redirectUrl = storedState.redirectUrl
+    if (storedState.tokenInUrl) {
+      const url = new URL(redirectUrl)
+      url.searchParams.set('token', token)
+      redirectUrl = url.toString()
+    }
+
     // Redirect to original URL
-    res.redirect(storedState.redirectUrl)
+    res.redirect(redirectUrl)
   } catch (error) {
     console.error('OAuth callback error:', error)
     res.redirect(`${config.frontendUrl}/login?error=auth_failed`)
