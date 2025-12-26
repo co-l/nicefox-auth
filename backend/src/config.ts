@@ -1,9 +1,8 @@
 import dotenv from 'dotenv'
 import path from 'path'
 
-// Load .env from backend directory or parent directory
-dotenv.config({ path: path.resolve(__dirname, '../.env') })
-dotenv.config({ path: path.resolve(__dirname, '../../.env') })
+// Load .env from current working directory (backend/)
+dotenv.config({ path: path.resolve(process.cwd(), '.env') })
 
 function requireEnv(name: string): string {
   const value = process.env[name]

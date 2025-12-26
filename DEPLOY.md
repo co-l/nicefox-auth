@@ -53,7 +53,7 @@ nano .env
 ```
 
 ```env
-PORT=3001
+PORT=3200
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=<neo4j-password>
@@ -62,7 +62,7 @@ JWT_EXPIRES_IN=7d
 COOKIE_DOMAIN=.nicefox.net
 GOOGLE_CLIENT_ID=<from-google-console>
 GOOGLE_CLIENT_SECRET=<from-google-console>
-GOOGLE_REDIRECT_URI=https://auth.nicefox.net/api/auth/google/callback
+GOOGLE_CALLBACK_URL=https://auth.nicefox.net/api/auth/google/callback
 ```
 
 ## 6. Start backend with pm2
@@ -93,7 +93,7 @@ server {
     }
 
     location /api {
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://127.0.0.1:3200;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

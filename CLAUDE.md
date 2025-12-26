@@ -13,7 +13,7 @@ Central authentication service for `*.nicefox.net` apps.
 ```bash
 # Start development
 cd frontend && npm run dev    # Port 5175
-cd backend && npm run dev     # Port 3001
+cd backend && npm run dev     # Port 3200
 
 # Type checking
 cd frontend && npx tsc --noEmit
