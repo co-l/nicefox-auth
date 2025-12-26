@@ -81,9 +81,12 @@ export function Login() {
   return (
     <div className="container">
       <div className="row justify-content-center align-items-center min-vh-100">
-        <div className="col-md-6 col-lg-4">
+        <div style={{ width: '100%', maxWidth: 400 }}>
           <div className="card shadow">
             <div className="card-body p-5">
+              <div className="text-center mb-3">
+                <img src="/nicefox.gif" alt="Nicefox" width="50" height="80" />
+              </div>
               <h1 className="text-center mb-4">Nicefox Auth</h1>
               <p className="text-center text-muted mb-4">
                 Sign in to access nicefox.net applications
@@ -146,7 +149,7 @@ export function Login() {
 
               <button
                 onClick={handleGoogleLogin}
-                className="btn btn-outline-dark w-100 d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
                 disabled={submitting}
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">

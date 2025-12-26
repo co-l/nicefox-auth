@@ -18,7 +18,7 @@ export function Home() {
                 {user?.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
-                    alt={user.name}
+                    alt=""
                     className="rounded-circle mb-3"
                     width="80"
                     height="80"
@@ -32,7 +32,7 @@ export function Home() {
                   </div>
                 )}
                 <h2>{user?.name}</h2>
-                <p className="text-muted">{user?.email}</p>
+                <p className="text-muted mb-1">{user?.email}</p>
                 <span className={`badge ${user?.role === 'admin' ? 'bg-danger' : 'bg-secondary'}`}>
                   {user?.role}
                 </span>
@@ -54,7 +54,8 @@ export function Home() {
           </div>
 
           <div className="card mt-4">
-            <div className="card-header">
+            <div className="card-header d-flex align-items-center gap-2">
+              <img src="/nicefox_thumbnail.gif" alt="Nicefox" width="24" height="24" />
               <h5 className="mb-0">About Nicefox Auth</h5>
             </div>
             <div className="card-body">

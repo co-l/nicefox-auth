@@ -93,7 +93,7 @@ export function Users() {
       <div className="card">
         <div className="table-responsive">
           <table className="table table-hover mb-0">
-            <thead className="table-light">
+            <thead>
               <tr>
                 <th>User</th>
                 <th>Email</th>

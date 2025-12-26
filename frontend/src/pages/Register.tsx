@@ -75,9 +75,12 @@ export function Register() {
   return (
     <div className="container">
       <div className="row justify-content-center align-items-center min-vh-100">
-        <div className="col-md-6 col-lg-4">
+        <div style={{ width: '100%', maxWidth: 400 }}>
           <div className="card shadow">
             <div className="card-body p-5">
+              <div className="text-center mb-3">
+                <img src="/nicefox.gif" alt="Nicefox" width="50" height="80" />
+              </div>
               <h1 className="text-center mb-4">Create Account</h1>
 
               {error && (
