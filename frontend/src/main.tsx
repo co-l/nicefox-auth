@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { CookieConsent } from './components/CookieConsent'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Home } from './pages/Home'
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             }
           />
         </Routes>
+        <CookieConsent />
       </BrowserRouter>
     </AuthProvider>
   </React.StrictMode>
