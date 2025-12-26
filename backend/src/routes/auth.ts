@@ -125,7 +125,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // POST /api/auth/register - Register with email/password
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body
+    const { email, password, name, includeToken } = req.body
 
     // Validate input
     if (!email || !password || !name) {
@@ -153,9 +153,9 @@ router.post('/register', async (req: Request, res: Response) => {
     const token = generateJwt(user)
     res.cookie(COOKIE_NAME, token, getCookieOptions())
 
-    // Return user without sensitive fields
+    // Return user without sensitive fields, optionally include token
     const { googleId, passwordHash: _, ...safeUser } = user
-    res.status(201).json({ user: safeUser })
+    res.status(201).json({ user: safeUser, ...(includeToken && { token }) })
   } catch (error) {
     console.error('Registration error:', error)
     res.status(500).json({ error: 'Registration failed' })
@@ -165,7 +165,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // POST /api/auth/login - Login with email/password
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body
+    const { email, password, includeToken } = req.body
 
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' })
@@ -199,9 +199,9 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = generateJwt(user)
     res.cookie(COOKIE_NAME, token, getCookieOptions())
 
-    // Return user without sensitive fields
+    // Return user without sensitive fields, optionally include token
     const { googleId, passwordHash: _, ...safeUser } = user
-    res.json({ user: safeUser })
+    res.json({ user: safeUser, ...(includeToken && { token }) })
   } catch (error) {
     console.error('Login error:', error)
     res.status(500).json({ error: 'Login failed' })

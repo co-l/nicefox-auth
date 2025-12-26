@@ -16,6 +16,7 @@ export function Login() {
 
   const urlError = searchParams.get('error')
   const redirect = searchParams.get('redirect')
+  const tokenInUrl = searchParams.get('token_in_url') === 'true'
 
   useEffect(() => {
     if (!loading && user) {
@@ -28,7 +29,7 @@ export function Login() {
   }, [user, loading, navigate, redirect])
 
   const handleGoogleLogin = () => {
-    window.location.href = getGoogleAuthUrl(redirect || undefined)
+    window.location.href = getGoogleAuthUrl(redirect || undefined, tokenInUrl)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -37,10 +38,16 @@ export function Login() {
     setSubmitting(true)
 
     try {
-      await login(email, password)
+      const { token } = await login(email, password, tokenInUrl)
       await refreshUser()
       if (redirect) {
-        window.location.href = redirect
+        let redirectUrl = redirect
+        if (tokenInUrl && token) {
+          const url = new URL(redirect)
+          url.searchParams.set('token', token)
+          redirectUrl = url.toString()
+        }
+        window.location.href = redirectUrl
       } else {
         navigate('/')
       }
@@ -175,7 +182,7 @@ export function Login() {
 
               <div className="text-center mt-4">
                 <span className="text-muted">Don't have an account? </span>
-                <Link to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'}>
+                <Link to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}${tokenInUrl ? '&token_in_url=true' : ''}` : '/register'}>
                   Create one
                 </Link>
               </div>

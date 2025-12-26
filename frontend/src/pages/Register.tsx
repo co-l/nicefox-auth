@@ -17,6 +17,7 @@ export function Register() {
   const [submitting, setSubmitting] = useState(false)
 
   const redirect = searchParams.get('redirect')
+  const tokenInUrl = searchParams.get('token_in_url') === 'true'
 
   useEffect(() => {
     if (!loading && user) {
@@ -44,10 +45,16 @@ export function Register() {
 
     setSubmitting(true)
     try {
-      await register(email, password, name)
+      const { token } = await register(email, password, name, tokenInUrl)
       await refreshUser()
       if (redirect) {
-        window.location.href = redirect
+        let redirectUrl = redirect
+        if (tokenInUrl && token) {
+          const url = new URL(redirect)
+          url.searchParams.set('token', token)
+          redirectUrl = url.toString()
+        }
+        window.location.href = redirectUrl
       } else {
         navigate('/')
       }
@@ -162,7 +169,7 @@ export function Register() {
 
               <div className="text-center">
                 <span className="text-muted">Already have an account? </span>
-                <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'}>
+                <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}${tokenInUrl ? '&token_in_url=true' : ''}` : '/login'}>
                   Sign in
                 </Link>
               </div>

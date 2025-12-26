@@ -20,22 +20,27 @@ export async function logout(): Promise<void> {
   await api.post('/auth/logout')
 }
 
-export async function register(email: string, password: string, name: string): Promise<AuthUser> {
-  const response = await api.post<{ user: AuthUser }>('/auth/register', { email, password, name })
-  return response.data.user
+export async function register(email: string, password: string, name: string, includeToken?: boolean): Promise<{ user: AuthUser; token?: string }> {
+  const response = await api.post<{ user: AuthUser; token?: string }>('/auth/register', { email, password, name, includeToken })
+  return response.data
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
-  const response = await api.post<{ user: AuthUser }>('/auth/login', { email, password })
-  return response.data.user
+export async function login(email: string, password: string, includeToken?: boolean): Promise<{ user: AuthUser; token?: string }> {
+  const response = await api.post<{ user: AuthUser; token?: string }>('/auth/login', { email, password, includeToken })
+  return response.data
 }
 
-export function getGoogleAuthUrl(redirect?: string): string {
+export function getGoogleAuthUrl(redirect?: string, tokenInUrl?: boolean): string {
   const baseUrl = '/api/auth/google'
+  const params = new URLSearchParams()
   if (redirect) {
-    return `${baseUrl}?redirect=${encodeURIComponent(redirect)}`
+    params.set('redirect', redirect)
   }
-  return baseUrl
+  if (tokenInUrl) {
+    params.set('token_in_url', 'true')
+  }
+  const queryString = params.toString()
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl
 }
 
 // Users API (admin only)
