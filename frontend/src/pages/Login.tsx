@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getGoogleAuthUrl, login } from '../services/api'
+import { getGoogleAuthUrl, login, getCurrentUserWithToken } from '../services/api'
 import axios from 'axios'
 
 export function Login() {
@@ -21,12 +21,26 @@ export function Login() {
   useEffect(() => {
     if (!loading && user) {
       if (redirect) {
-        window.location.href = redirect
+        // If token_in_url is requested, fetch the token and append it to the redirect URL
+        if (tokenInUrl) {
+          getCurrentUserWithToken().then((result) => {
+            if (result?.token) {
+              const url = new URL(redirect)
+              url.searchParams.set('token', result.token)
+              window.location.href = url.toString()
+            } else {
+              // Fallback if token fetch fails
+              window.location.href = redirect
+            }
+          })
+        } else {
+          window.location.href = redirect
+        }
       } else {
         navigate('/')
       }
     }
-  }, [user, loading, navigate, redirect])
+  }, [user, loading, navigate, redirect, tokenInUrl])
 
   const handleGoogleLogin = () => {
     window.location.href = getGoogleAuthUrl(redirect || undefined, tokenInUrl)

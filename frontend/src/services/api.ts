@@ -16,6 +16,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
+export async function getCurrentUserWithToken(): Promise<{ user: AuthUser; token: string } | null> {
+  try {
+    const response = await api.get<{ user: AuthUser; token: string }>('/auth/me?include_token=true')
+    return response.data
+  } catch {
+    return null
+  }
+}
+
 export async function logout(): Promise<void> {
   await api.post('/auth/logout')
 }

@@ -217,7 +217,15 @@ router.get('/me', authMiddleware, (req: Request, res: Response) => {
 
   // Return user without sensitive fields
   const { googleId, passwordHash, ...safeUser } = req.user
-  res.json({ user: safeUser })
+
+  // Optionally include token for cross-origin redirects
+  const includeToken = req.query.include_token === 'true'
+  if (includeToken) {
+    const token = generateJwt(req.user)
+    res.json({ user: safeUser, token })
+  } else {
+    res.json({ user: safeUser })
+  }
 })
 
 // POST /api/auth/logout - Clear auth cookie
