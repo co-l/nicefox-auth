@@ -5,7 +5,7 @@ Central authentication service for `*.nicefox.net` apps.
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite + Bootstrap 5
-- **Backend**: Express + TypeScript + Neo4j
+- **Backend**: Express + TypeScript + NiceFox GraphDB
 - **Auth**: Google OAuth + JWT (httpOnly cookie on .nicefox.net)
 
 ## Commands
@@ -33,7 +33,7 @@ frontend/src/
 backend/src/
 ├── routes/         # auth.ts, users.ts
 ├── services/       # auth.ts, user.ts
-├── db/             # neo4j.ts, userQueries.ts
+├── db/             # graphdb.ts, userQueries.ts
 ├── middleware/     # auth.ts (JWT verify, admin check)
 └── types/          # TypeScript interfaces
 
@@ -45,7 +45,7 @@ shared/             # Copy to client apps
 
 ## Key Concepts
 
-- `Auth_User` nodes in Neo4j (prefixed for future DB split)
+- `Auth_User` nodes in GraphDB
 - Client apps create local user nodes linked via `authUserId`
 - Shared JWT secret across all apps
 - Per-app logout (doesn't clear shared cookie)
@@ -54,7 +54,7 @@ shared/             # Copy to client apps
 ## Environment
 
 Copy `.env.example` to `.env` in backend folder. Requires:
-- Neo4j connection
+- GraphDB connection (URL, project, API key)
 - Google OAuth credentials (see SPEC.md for setup instructions)
 - JWT secret (shared with all client apps)
 

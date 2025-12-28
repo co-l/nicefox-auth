@@ -18,7 +18,7 @@ A self-hosted central authentication service for `*.nicefox.net` apps, providing
                               │        │                            │
                               │        ▼                            │
                               │  ┌───────────┐                      │
-                              │  │ Neo4j     │                      │
+                              │  │ GraphDB   │                      │
                               │  │ Auth_User │                      │
                               │  └───────────┘                      │
                               └─────────────────────────────────────┘
@@ -39,7 +39,7 @@ A self-hosted central authentication service for `*.nicefox.net` apps, providing
 
 ## Data Model
 
-### Auth Service (Neo4j)
+### Auth Service (GraphDB)
 
 ```cypher
 (:Auth_User {
@@ -119,7 +119,7 @@ nicefox-auth/
 │   │   │   ├── auth.ts           # OAuth logic, JWT issuance
 │   │   │   └── user.ts           # User CRUD
 │   │   ├── db/
-│   │   │   ├── neo4j.ts          # Connection
+│   │   │   ├── graphdb.ts        # Connection
 │   │   │   └── userQueries.ts    # Auth_User queries
 │   │   ├── middleware/
 │   │   │   └── auth.ts           # JWT verification, admin check
@@ -228,10 +228,10 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:5175
 COOKIE_DOMAIN=.nicefox.net        # Use localhost for dev
 
-# Neo4j
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=
+# GraphDB
+GRAPHDB_URL=https://graphdb.nicefox.net
+GRAPHDB_PROJECT=auth
+GRAPHDB_API_KEY=
 
 # Google OAuth
 GOOGLE_CLIENT_ID=
@@ -321,9 +321,9 @@ function isValidRedirect(url: string): boolean {
 
 ## Implementation Order
 
-1. **Backend setup** - Express, Neo4j connection, config
+1. **Backend setup** - Express, GraphDB connection, config
 2. **Auth routes** - Google OAuth flow, JWT issuance, cookie setting
-3. **User queries** - Create/update Auth_User in Neo4j
+3. **User queries** - Create/update Auth_User in GraphDB
 4. **Frontend login page** - Minimal React app with Google button
 5. **Admin routes & UI** - User list, role editing
 6. **Shared code** - Extract middleware for client apps
@@ -395,7 +395,7 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
 
 | Item | Decision |
 |------|----------|
-| Database | Shared Neo4j, `Auth_` prefix, abstracted for future split |
+| Database | NiceFox GraphDB, `Auth_` prefix |
 | App-user linking | Local user node (e.g., `Compta_User`) with `authUserId` field + `[:LINKED_TO]` relationship |
 | Roles | Global (`user` / `admin`), checked by each app |
 | Logout | Per-app only |

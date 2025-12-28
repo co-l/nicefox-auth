@@ -18,10 +18,10 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5175',
   cookieDomain: process.env.COOKIE_DOMAIN || 'localhost',
 
-  neo4j: {
-    uri: requireEnv('NEO4J_URI'),
-    user: requireEnv('NEO4J_USER'),
-    password: requireEnv('NEO4J_PASSWORD'),
+  graphdb: {
+    url: requireEnv('GRAPHDB_URL'),
+    project: process.env.GRAPHDB_PROJECT || 'auth',
+    apiKey: process.env.GRAPHDB_API_KEY,
   },
 
   google: {

@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import { config } from './config.js'
-import { verifyConnection, closeConnection } from './db/neo4j.js'
+import { initClient, verifyConnection, closeClient } from './db/graphdb.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
 
@@ -28,6 +28,13 @@ app.get('/health', (_req, res) => {
 // Start server
 async function start() {
   try {
+    // Initialize GraphDB client
+    initClient({
+      url: config.graphdb.url,
+      project: config.graphdb.project,
+      env: config.nodeEnv === 'production' ? 'production' : 'test',
+      apiKey: config.graphdb.apiKey,
+    })
     await verifyConnection()
     
     app.listen(config.port, () => {
@@ -41,9 +48,9 @@ async function start() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   console.log('Shutting down...')
-  await closeConnection()
+  closeClient()
   process.exit(0)
 })
 
