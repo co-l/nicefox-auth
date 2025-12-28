@@ -17,6 +17,11 @@ import { authMiddleware, requireAdmin, optionalAuthMiddleware, getLoginUrl } fro
 const app = express()
 app.use(cookieParser())
 
+// Trust proxy in production (behind nginx/caddy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
 const JWT_SECRET = process.env.JWT_SECRET // Same secret as nicefox-auth
 const AUTH_URL = 'https://auth.nicefox.net'
 ```
