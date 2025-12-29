@@ -35,24 +35,24 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 
-  // Allowed redirect hosts for security
-  allowedRedirectHosts: [
-    'localhost',
-    'localhost:5174',
-    'localhost:5175',
-    'compta.nicefox.net',
-    'compta.local.nicefox.net',
-    'auth.nicefox.net',
-    'auth.local.nicefox.net',
-  ],
 }
 
 export function isValidRedirectUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return config.allowedRedirectHosts.some(
-      (host) => parsed.host === host || parsed.host.endsWith(`:${host.split(':')[1] || ''}`)
-    )
+    const host = parsed.hostname
+
+    // Allow localhost (any port)
+    if (host === 'localhost') {
+      return true
+    }
+
+    // Allow any *.nicefox.net subdomain
+    if (host === 'nicefox.net' || host.endsWith('.nicefox.net')) {
+      return true
+    }
+
+    return false
   } catch {
     return false
   }
