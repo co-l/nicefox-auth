@@ -8,7 +8,7 @@ export function Privacy() {
           <div className="card shadow-sm">
             <div className="card-body p-4">
               <h1 className="mb-4">Privacy Policy</h1>
-              <p className="text-muted">Last updated: December 2024</p>
+              <p className="text-muted">Last updated: December 2025</p>
 
               <hr />
 
