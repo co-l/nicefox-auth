@@ -86,7 +86,7 @@ export function Landing() {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 border-top bg-light">
+      <footer className="py-4 border-top bg-body-tertiary">
         <div className="container">
           <div className="row align-items-center">
             <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
