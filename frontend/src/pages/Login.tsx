@@ -200,7 +200,26 @@ export function Login() {
                   Create one
                 </Link>
               </div>
+
+              <hr className="my-4" />
+
+              <div className="text-center">
+                <small className="text-muted">
+                  <Link to="/privacy" className="text-muted">Privacy Policy</Link>
+                  {' | '}
+                  <Link to="/terms" className="text-muted">Terms of Service</Link>
+                </small>
+              </div>
             </div>
+          </div>
+
+          <div className="text-center mt-4">
+            <p className="text-muted mb-1">
+              <small>Central authentication service for <code>*.nicefox.net</code> applications</small>
+            </p>
+            <p className="text-muted">
+              <small>Contact: <a href="mailto:support@nicefox.net" className="text-muted">support@nicefox.net</a></small>
+            </p>
           </div>
         </div>
       </div>
