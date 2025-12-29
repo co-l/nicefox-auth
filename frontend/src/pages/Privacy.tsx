@@ -63,6 +63,12 @@ export function Privacy() {
               </Link>
             </div>
           </div>
+
+          <div className="text-center mt-4">
+            <Link to="/privacy" className="text-muted small me-3">Privacy Policy</Link>
+            <Link to="/terms" className="text-muted small me-3">Terms of Service</Link>
+            <a href="mailto:support@nicefox.net" className="text-muted small">Contact</a>
+          </div>
         </div>
       </div>
     </div>

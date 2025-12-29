@@ -37,7 +37,7 @@ export function Login() {
           window.location.href = redirect
         }
       } else {
-        navigate('/')
+        navigate('/dashboard')
       }
     }
   }, [user, loading, navigate, redirect, tokenInUrl])
@@ -63,7 +63,7 @@ export function Login() {
         }
         window.location.href = redirectUrl
       } else {
-        navigate('/')
+        navigate('/dashboard')
       }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {

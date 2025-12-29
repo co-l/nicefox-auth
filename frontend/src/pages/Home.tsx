@@ -46,6 +46,9 @@ export function Home() {
                     Manage Users
                   </Link>
                 )}
+                <Link to="/" className="btn btn-outline-secondary">
+                  Back to Home
+                </Link>
                 <button onClick={handleLogout} className="btn btn-outline-danger">
                   Sign Out
                 </button>
