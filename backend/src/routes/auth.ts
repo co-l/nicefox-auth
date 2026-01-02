@@ -14,7 +14,7 @@ import {
   findUserByEmail,
   updateLastLogin,
 } from '../db/userQueries.js'
-import { authMiddleware } from '../middleware/auth.js'
+import { extractDomainFromUrl, getSecretForDomain } from '../services/jwtSecrets.js'
 
 const SALT_ROUNDS = 10
 
@@ -22,7 +22,7 @@ const router = Router()
 const COOKIE_NAME = 'auth_token'
 
 // Store state -> redirect URL mapping (in production, use Redis or similar)
-const stateStore = new Map<string, { redirectUrl: string; tokenInUrl: boolean; expiresAt: number }>()
+const stateStore = new Map<string, { redirectUrl: string; domain: string; tokenInUrl: boolean; expiresAt: number }>()
 
 // Clean up expired states periodically
 setInterval(() => {
@@ -50,10 +50,18 @@ router.get('/google', (req: Request, res: Response) => {
     }
   }
 
+  // Extract domain and verify we have a secret for it
+  const domain = extractDomainFromUrl(finalRedirect)
+  if (!getSecretForDomain(domain)) {
+    res.status(400).json({ error: `No JWT secret configured for domain: ${domain}` })
+    return
+  }
+
   // Generate state for CSRF protection
   const state = crypto.randomUUID()
   stateStore.set(state, {
     redirectUrl: finalRedirect,
+    domain,
     tokenInUrl,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   })
@@ -100,8 +108,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     // Create or update user in database
     const user = await createOrUpdateUser(googleUser)
 
-    // Generate JWT
-    const token = generateJwt(user)
+    // Generate JWT with domain-specific secret
+    const token = generateJwt(user, storedState.domain)
 
     // Set cookie
     res.cookie(COOKIE_NAME, token, getCookieOptions())
@@ -123,6 +131,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 })
 
 // POST /api/auth/register - Register with email/password
+// Used by auth service itself - uses request hostname for domain
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password, name, includeToken } = req.body
@@ -149,8 +158,11 @@ router.post('/register', async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
     const user = await createUserWithPassword({ email, password, name }, passwordHash)
 
+    // Use request hostname as domain (auth service's own domain)
+    const domain = req.hostname
+
     // Generate JWT and set cookie
-    const token = generateJwt(user)
+    const token = generateJwt(user, domain)
     res.cookie(COOKIE_NAME, token, getCookieOptions())
 
     // Return user without sensitive fields, optionally include token
@@ -163,6 +175,7 @@ router.post('/register', async (req: Request, res: Response) => {
 })
 
 // POST /api/auth/login - Login with email/password
+// Used by auth service itself - uses request hostname for domain
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password, includeToken } = req.body
@@ -195,8 +208,11 @@ router.post('/login', async (req: Request, res: Response) => {
     // Update last login
     await updateLastLogin(user.id)
 
+    // Use request hostname as domain (auth service's own domain)
+    const domain = req.hostname
+
     // Generate JWT and set cookie
-    const token = generateJwt(user)
+    const token = generateJwt(user, domain)
     res.cookie(COOKIE_NAME, token, getCookieOptions())
 
     // Return user without sensitive fields, optionally include token
@@ -209,20 +225,44 @@ router.post('/login', async (req: Request, res: Response) => {
 })
 
 // GET /api/auth/me - Get current user
-router.get('/me', authMiddleware, (req: Request, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ error: 'Not authenticated' })
+// Requires ?domain=<domain> query param to verify token with correct secret
+router.get('/me', async (req: Request, res: Response) => {
+  const domain = req.query.domain as string | undefined
+  if (!domain) {
+    res.status(400).json({ error: 'domain query parameter is required' })
+    return
+  }
+
+  const token = req.cookies[COOKIE_NAME]
+  if (!token) {
+    res.status(401).json({ error: 'Authentication required' })
+    return
+  }
+
+  // Import verifyJwt dynamically to use domain-specific verification
+  const { verifyJwt } = await import('../services/auth.js')
+  const payload = verifyJwt(token, domain)
+  if (!payload) {
+    res.status(401).json({ error: 'Invalid or expired token' })
+    return
+  }
+
+  // Fetch full user from database
+  const { findUserById } = await import('../db/userQueries.js')
+  const user = await findUserById(payload.userId)
+  if (!user) {
+    res.status(401).json({ error: 'User not found' })
     return
   }
 
   // Return user without sensitive fields
-  const { googleId, passwordHash, ...safeUser } = req.user
+  const { googleId, passwordHash, ...safeUser } = user
 
   // Optionally include token for cross-origin redirects
   const includeToken = req.query.include_token === 'true'
   if (includeToken) {
-    const token = generateJwt(req.user)
-    res.json({ user: safeUser, token })
+    const newToken = generateJwt(user, domain)
+    res.json({ user: safeUser, token: newToken })
   } else {
     res.json({ user: safeUser })
   }

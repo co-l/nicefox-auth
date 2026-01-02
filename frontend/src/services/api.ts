@@ -6,10 +6,16 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Get current domain for JWT secret lookup
+function getCurrentDomain(): string {
+  return window.location.hostname
+}
+
 // Auth API
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
-    const response = await api.get<{ user: AuthUser }>('/auth/me')
+    const domain = getCurrentDomain()
+    const response = await api.get<{ user: AuthUser }>(`/auth/me?domain=${encodeURIComponent(domain)}`)
     return response.data.user
   } catch {
     return null
@@ -18,7 +24,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 export async function getCurrentUserWithToken(): Promise<{ user: AuthUser; token: string } | null> {
   try {
-    const response = await api.get<{ user: AuthUser; token: string }>('/auth/me?include_token=true')
+    const domain = getCurrentDomain()
+    const response = await api.get<{ user: AuthUser; token: string }>(`/auth/me?domain=${encodeURIComponent(domain)}&include_token=true`)
     return response.data
   } catch {
     return null

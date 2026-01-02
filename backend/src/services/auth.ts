@@ -1,5 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken'
 import { config } from '../config.js'
+import { getSecretForDomain } from './jwtSecrets.js'
 import type { AuthUser, TokenPayload, GoogleUserInfo } from '../types/index.js'
 
 // Google OAuth URLs
@@ -60,21 +61,43 @@ export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUser
   return response.json() as Promise<GoogleUserInfo>
 }
 
-export function generateJwt(user: AuthUser): string {
+/**
+ * Generate a JWT for a user, signed with the secret for the target domain.
+ * @param user - The authenticated user
+ * @param targetDomain - The domain this token is for (e.g., "compta.nicefox.net")
+ * @throws Error if no secret is configured for the domain
+ */
+export function generateJwt(user: AuthUser, targetDomain: string): string {
+  const secret = getSecretForDomain(targetDomain)
+  if (!secret) {
+    throw new Error(`No JWT secret configured for domain: ${targetDomain}`)
+  }
+
   const payload: TokenPayload = {
     userId: user.id,
     email: user.email,
     role: user.role,
   }
 
-  return jwt.sign(payload, config.jwt.secret, {
+  return jwt.sign(payload, secret, {
     expiresIn: config.jwt.expiresIn,
   } as SignOptions)
 }
 
-export function verifyJwt(token: string): TokenPayload | null {
+/**
+ * Verify a JWT using the secret for the specified domain.
+ * @param token - The JWT to verify
+ * @param domain - The domain to use for secret lookup
+ * @returns The decoded payload, or null if invalid
+ */
+export function verifyJwt(token: string, domain: string): TokenPayload | null {
+  const secret = getSecretForDomain(domain)
+  if (!secret) {
+    return null
+  }
+
   try {
-    return jwt.verify(token, config.jwt.secret) as TokenPayload
+    return jwt.verify(token, secret) as TokenPayload
   } catch {
     return null
   }

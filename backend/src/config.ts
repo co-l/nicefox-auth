@@ -31,7 +31,7 @@ export const config = {
   },
 
   jwt: {
-    secret: requireEnv('JWT_SECRET'),
+    secretsDir: process.env.JWT_SECRETS_DIR || '/var/lib/nicefox-auth/secrets',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 

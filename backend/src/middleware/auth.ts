@@ -4,6 +4,11 @@ import { findUserById } from '../db/userQueries.js'
 
 const COOKIE_NAME = 'auth_token'
 
+/**
+ * Auth middleware that verifies JWT using domain-specific secret.
+ * Uses the request hostname as the domain for secret lookup.
+ * For routes that need a different domain, use authMiddlewareWithDomain instead.
+ */
 export async function authMiddleware(
   req: Request,
   res: Response,
@@ -17,7 +22,9 @@ export async function authMiddleware(
       return
     }
 
-    const payload = verifyJwt(token)
+    // Use request hostname as domain for token verification
+    const domain = req.hostname
+    const payload = verifyJwt(token, domain)
     if (!payload) {
       res.status(401).json({ error: 'Invalid or expired token' })
       return
@@ -57,6 +64,10 @@ export async function adminMiddleware(
   next()
 }
 
+/**
+ * Optional auth middleware - doesn't fail if no token present.
+ * Uses request hostname as domain for secret lookup.
+ */
 export function optionalAuthMiddleware(
   req: Request,
   _res: Response,
@@ -65,7 +76,8 @@ export function optionalAuthMiddleware(
   const token = req.cookies[COOKIE_NAME]
 
   if (token) {
-    const payload = verifyJwt(token)
+    const domain = req.hostname
+    const payload = verifyJwt(token, domain)
     if (payload) {
       // Don't fetch user, just attach payload for quick checks
       findUserById(payload.userId).then((user) => {
