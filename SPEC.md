@@ -2,7 +2,7 @@
 
 ## Overview
 
-A self-hosted central authentication service for `*.nicefox.net` apps, providing Google OAuth login, JWT-based sessions, and minimal user management.
+A self-hosted central authentication service for `*.nicefox.net` apps, providing Google OAuth login, email/password authentication, JWT-based sessions, and minimal user management.
 
 ## Architecture
 
@@ -44,8 +44,9 @@ A self-hosted central authentication service for `*.nicefox.net` apps, providing
 ```cypher
 (:Auth_User {
   id: String,           # UUID
-  email: String,        # unique, from Google
-  googleId: String,     # unique, Google's sub claim
+  email: String,        # unique, from Google or registration
+  googleId: String?,    # Google's sub claim (null if email/password auth)
+  passwordHash: String?, # bcrypt hash (null if Google auth)
   name: String,
   avatarUrl: String?,
   role: String,         # 'user' | 'admin'
@@ -53,6 +54,8 @@ A self-hosted central authentication service for `*.nicefox.net` apps, providing
   lastLoginAt: DateTime
 })
 ```
+
+> Note: Users can authenticate via Google OAuth OR email/password. The first user to register automatically becomes admin.
 
 ### Client Apps (e.g., Compta)
 
