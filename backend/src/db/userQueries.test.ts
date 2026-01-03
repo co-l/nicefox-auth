@@ -1,5 +1,8 @@
+// Set NODE_ENV before importing GraphDB so it uses local client
+process.env.NODE_ENV = 'development'
+
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { createTestClient, type TestClient } from 'nicefox-graphdb/packages/client/src/index.ts'
+import { GraphDB, type GraphDBClient } from 'nicefox-graphdb'
 import {
   findUserByGoogleId,
   findUserById,
@@ -15,10 +18,10 @@ import {
 import type { GoogleUserInfo } from '../types/index.js'
 
 describe('userQueries', () => {
-  let testClient: TestClient
+  let testClient: GraphDBClient
 
   beforeAll(async () => {
-    testClient = await createTestClient({ project: 'auth' })
+    testClient = await GraphDB({ project: 'auth', url: '', dataPath: ':memory:' })
     setTestClient(testClient)
   })
 

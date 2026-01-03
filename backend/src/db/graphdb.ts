@@ -1,12 +1,12 @@
-import { NiceFoxGraphDB, type ClientOptions } from 'nicefox-graphdb/packages/client/src/index.ts'
+import { GraphDB, type GraphDBClient, type GraphDBOptions } from 'nicefox-graphdb'
 
-let client: NiceFoxGraphDB | null = null
+let client: GraphDBClient | null = null
 
-export function initClient(options: ClientOptions): void {
-  client = new NiceFoxGraphDB(options)
+export async function initClient(options: GraphDBOptions): Promise<void> {
+  client = await GraphDB(options)
 }
 
-export function getClient(): NiceFoxGraphDB {
+export function getClient(): GraphDBClient {
   if (!client) {
     throw new Error('GraphDB client not initialized. Call initClient() first.')
   }

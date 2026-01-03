@@ -15,7 +15,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "nicefox-graphdb": "github:co-l/nicefox-graphdb#main",
+    "nicefox-graphdb": "^1.0.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

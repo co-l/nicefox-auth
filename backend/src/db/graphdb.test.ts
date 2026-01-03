@@ -1,12 +1,15 @@
+// Set NODE_ENV before importing GraphDB so it uses local client
+process.env.NODE_ENV = 'development'
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { createTestClient, type TestClient } from 'nicefox-graphdb/packages/client/src/index.ts'
+import { GraphDB, type GraphDBClient } from 'nicefox-graphdb'
 import { getClient, initClient, closeClient } from './graphdb.js'
 
 describe('graphdb module', () => {
-  let testClient: TestClient
+  let testClient: GraphDBClient
 
   beforeAll(async () => {
-    testClient = await createTestClient({ project: 'auth' })
+    testClient = await GraphDB({ project: 'auth', url: '', dataPath: ':memory:' })
   })
 
   afterAll(() => {
@@ -14,9 +17,9 @@ describe('graphdb module', () => {
   })
 
   describe('initClient', () => {
-    it('should initialize client with provided options', () => {
+    it('should initialize client with provided options', async () => {
       // Using mock config - in real usage this would connect to actual server
-      initClient({
+      await initClient({
         url: 'http://localhost:8080',
         project: 'auth',
         env: 'test',
@@ -34,8 +37,8 @@ describe('graphdb module', () => {
       expect(() => getClient()).toThrow('GraphDB client not initialized')
     })
 
-    it('should return client after initialization', () => {
-      initClient({
+    it('should return client after initialization', async () => {
+      await initClient({
         url: 'http://localhost:8080',
         project: 'auth',
         env: 'test',
@@ -47,8 +50,8 @@ describe('graphdb module', () => {
   })
 
   describe('closeClient', () => {
-    it('should clear the client instance', () => {
-      initClient({
+    it('should clear the client instance', async () => {
+      await initClient({
         url: 'http://localhost:8080',
         project: 'auth',
         env: 'test',

@@ -29,7 +29,7 @@ app.get('/health', (_req, res) => {
 async function start() {
   try {
     // Initialize GraphDB client
-    initClient({
+    await initClient({
       url: config.graphdb.url,
       project: config.graphdb.project,
       env: config.nodeEnv === 'production' ? 'production' : 'test',

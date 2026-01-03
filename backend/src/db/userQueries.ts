@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from 'uuid'
 import { getClient } from './graphdb.js'
 import type { AuthUser, GoogleUserInfo, RegisterInput } from '../types/index.js'
-import type { TestClient } from 'nicefox-graphdb/packages/client/src/index.ts'
+import type { GraphDBClient } from 'nicefox-graphdb'
 
 // For testing - allows injecting a test client
-let testClient: TestClient | null = null
+let testClient: GraphDBClient | null = null
 
-export function setTestClient(client: TestClient | null): void {
+export function setTestClient(client: GraphDBClient | null): void {
   testClient = client
 }
 
@@ -17,25 +17,31 @@ function getDb() {
   return getClient()
 }
 
-// GraphDB returns nodes as { id, label, properties: {...} }
+// GraphDB returns node properties directly (with _nf_id for internal ID)
 interface GraphNode {
   id: string
-  label: string
-  properties: Record<string, unknown>
+  email: string
+  googleId: string | null
+  passwordHash: string | null
+  name: string
+  avatarUrl: string | null
+  role: string
+  createdAt: string
+  lastLoginAt: string
+  _nf_id?: string
 }
 
 function recordToUser(node: GraphNode): AuthUser {
-  const props = node.properties
   return {
-    id: props.id as string,
-    email: props.email as string,
-    googleId: (props.googleId as string) || null,
-    passwordHash: (props.passwordHash as string) || null,
-    name: props.name as string,
-    avatarUrl: (props.avatarUrl as string) || null,
-    role: props.role as 'user' | 'admin',
-    createdAt: new Date(props.createdAt as string),
-    lastLoginAt: new Date(props.lastLoginAt as string),
+    id: node.id,
+    email: node.email,
+    googleId: node.googleId || null,
+    passwordHash: node.passwordHash || null,
+    name: node.name,
+    avatarUrl: node.avatarUrl || null,
+    role: node.role as 'user' | 'admin',
+    createdAt: new Date(node.createdAt),
+    lastLoginAt: new Date(node.lastLoginAt),
   }
 }
 
