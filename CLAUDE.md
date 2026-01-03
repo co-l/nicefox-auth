@@ -113,10 +113,14 @@ For `localhost`, a hardcoded secret is used automatically - no configuration nee
 
 ### Deploy Integration
 
-The `nicefox-deploy` tool should:
-1. SSH to auth server as `nicefox-auth` user
-2. Run: `npx ts-node cli/nicefox-auth-cli.ts secret get <domain>`
-3. Write the returned secret to the app's `.env` as `JWT_SECRET`
+Use `nicefox-deploy` to get secrets:
+
+```bash
+cd nicefox-deploy
+./scripts/auth-secret.sh compta.nicefox.net
+```
+
+This SSHs to the auth server and runs the CLI to get/create the secret.
 
 ## Environment
 
@@ -127,4 +131,7 @@ Copy `.env.example` to `.env` in backend folder. Requires:
 
 ## See Also
 
+- `DEPLOY.md` - How to deploy nicefox-auth itself
+- `ADD-PROJECT.md` - How to add a new app with NiceFox SSO
 - `SPEC.md` - Full implementation plan and Google OAuth setup
+- `DEVELOPMENT.md` - npm package API reference
