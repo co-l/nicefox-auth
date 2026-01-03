@@ -20,21 +20,18 @@ export const DEV_JWT_SECRET = 'nicefox-dev-secret-do-not-use-in-production'
 
 /**
  * Get the JWT secret for the current environment.
- * Uses DEV_JWT_SECRET for localhost, otherwise requires JWT_SECRET env var.
- * @param hostname - The hostname to check (e.g., req.hostname or process.env.HOST)
+ * In production (NODE_ENV=production), requires JWT_SECRET env var.
+ * In development, uses DEV_JWT_SECRET.
  * @returns The JWT secret to use
- * @throws Error if not localhost and JWT_SECRET is not set
+ * @throws Error if in production and JWT_SECRET is not set
  */
-export function getJwtSecret(hostname?: string): string {
-  const host = hostname || process.env.HOST || 'localhost'
-  
-  if (host === 'localhost' || host === '127.0.0.1') {
-    return DEV_JWT_SECRET
+export function getJwtSecret(): string {
+  if (process.env.NODE_ENV === 'production') {
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is required in production')
+    }
+    return secret
   }
-  
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET environment variable is required in production')
-  }
-  return secret
+  return DEV_JWT_SECRET
 }
