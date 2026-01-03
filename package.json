@@ -1,6 +1,6 @@
 {
   "name": "nicefox-auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Auth middleware for nicefox.net apps - JWT verification and Express middleware",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
