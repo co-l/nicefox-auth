@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getGoogleAuthUrl, login } from '../services/api'
+import { getGoogleAuthUrl, login, getTokenForRedirect } from '../services/api'
 import axios from 'axios'
 
 export function Login() {
@@ -20,7 +20,14 @@ export function Login() {
   useEffect(() => {
     if (!loading && user) {
       if (redirect) {
-        window.location.href = redirect
+        // Get token for redirect domain, then redirect with token
+        getTokenForRedirect(redirect)
+          .then(token => {
+            const url = new URL(redirect)
+            url.searchParams.set('token', token)
+            window.location.href = url.toString()
+          })
+          .catch(() => navigate('/dashboard'))  // fallback if redirect domain invalid
       } else {
         navigate('/dashboard')
       }
@@ -37,12 +44,13 @@ export function Login() {
     setSubmitting(true)
 
     try {
-      const { token } = await login(email, password)
+      await login(email, password)
       await refreshUser()
       if (redirect) {
-        // Append token to redirect URL
+        // Get token for redirect domain, then redirect with token
+        const redirectToken = await getTokenForRedirect(redirect)
         const url = new URL(redirect)
-        url.searchParams.set('token', token)
+        url.searchParams.set('token', redirectToken)
         window.location.href = url.toString()
       } else {
         navigate('/dashboard')

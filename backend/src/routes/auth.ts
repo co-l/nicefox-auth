@@ -11,6 +11,7 @@ import {
   createOrUpdateUser,
   createUserWithPassword,
   findUserByEmail,
+  findUserById,
   updateLastLogin,
 } from '../db/userQueries.js'
 import { extractDomainFromUrl, getSecretForDomain } from '../services/jwtSecrets.js'
@@ -208,6 +209,63 @@ router.post('/login', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Login error:', error)
     res.status(500).json({ error: 'Login failed' })
+  }
+})
+
+// POST /api/auth/token - Get a token for a specific redirect domain
+// Requires valid auth token, returns new token signed for target domain
+router.post('/token', async (req: Request, res: Response) => {
+  try {
+    // Extract Bearer token from Authorization header
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Authentication required' })
+      return
+    }
+    const token = authHeader.slice(7)
+
+    // Verify token using request hostname (auth service's domain)
+    const { verifyJwt } = await import('../services/auth.js')
+    const payload = verifyJwt(token, req.hostname)
+    if (!payload) {
+      res.status(401).json({ error: 'Invalid or expired token' })
+      return
+    }
+
+    // Validate redirect URL
+    const { redirect } = req.body
+    if (!redirect || typeof redirect !== 'string') {
+      res.status(400).json({ error: 'redirect URL is required' })
+      return
+    }
+
+    if (!isValidRedirectUrl(redirect)) {
+      res.status(400).json({ error: 'Invalid redirect URL' })
+      return
+    }
+
+    // Extract domain and verify we have a secret for it
+    const domain = extractDomainFromUrl(redirect)
+    const secret = getSecretForDomain(domain)
+    if (!secret) {
+      res.status(400).json({ error: `No JWT secret configured for domain: ${domain}` })
+      return
+    }
+
+    // Get user from database
+    const user = await findUserById(payload.userId)
+    if (!user) {
+      res.status(401).json({ error: 'User not found' })
+      return
+    }
+
+    // Generate token for target domain
+    const newToken = generateJwt(user, domain)
+
+    res.json({ token: newToken })
+  } catch (error) {
+    console.error('Token generation error:', error)
+    res.status(500).json({ error: 'Token generation failed' })
   }
 })
 

@@ -66,6 +66,11 @@ export function logout(): void {
   window.location.href = '/'
 }
 
+export async function getTokenForRedirect(redirect: string): Promise<string> {
+  const response = await api.post<{ token: string }>('/auth/token', { redirect })
+  return response.data.token
+}
+
 // Users API (admin only)
 export async function getUsers(): Promise<AuthUser[]> {
   const response = await api.get<{ users: AuthUser[] }>('/users')

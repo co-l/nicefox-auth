@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { register } from '../services/api'
+import { register, getTokenForRedirect } from '../services/api'
 import axios from 'axios'
 
 export function Register() {
@@ -21,7 +21,14 @@ export function Register() {
   useEffect(() => {
     if (!loading && user) {
       if (redirect) {
-        window.location.href = redirect
+        // Get token for redirect domain, then redirect with token
+        getTokenForRedirect(redirect)
+          .then(token => {
+            const url = new URL(redirect)
+            url.searchParams.set('token', token)
+            window.location.href = url.toString()
+          })
+          .catch(() => navigate('/'))  // fallback if redirect domain invalid
       } else {
         navigate('/')
       }
@@ -44,12 +51,13 @@ export function Register() {
 
     setSubmitting(true)
     try {
-      const { token } = await register(email, password, name)
+      await register(email, password, name)
       await refreshUser()
       if (redirect) {
-        // Append token to redirect URL
+        // Get token for redirect domain, then redirect with token
+        const redirectToken = await getTokenForRedirect(redirect)
         const url = new URL(redirect)
-        url.searchParams.set('token', token)
+        url.searchParams.set('token', redirectToken)
         window.location.href = url.toString()
       } else {
         navigate('/')
