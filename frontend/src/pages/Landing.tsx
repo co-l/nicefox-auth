@@ -42,7 +42,7 @@ export function Landing() {
                     <div className="card-body">
                       <h5 className="card-title">Secure</h5>
                       <p className="card-text text-muted small">
-                        Protected with Google OAuth and secure httpOnly cookies across all apps.
+                        Protected with Google OAuth and secure JWT tokens across all apps.
                       </p>
                     </div>
                   </div>

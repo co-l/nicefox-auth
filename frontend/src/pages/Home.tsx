@@ -64,7 +64,7 @@ export function Home() {
             <div className="card-body">
               <p className="text-muted mb-0">
                 This is the central authentication service for <code>*.nicefox.net</code> applications.
-                Your authentication is shared across all nicefox apps using a secure cookie.
+                Your authentication is shared across all nicefox apps using secure JWT tokens.
               </p>
             </div>
           </div>
