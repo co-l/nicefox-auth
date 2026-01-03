@@ -2,8 +2,6 @@ import { Request, Response, NextFunction, RequestHandler } from 'express'
 import { verifyToken } from './jwt'
 import type { AuthUser, TokenPayload } from './types'
 
-const COOKIE_NAME = 'auth_token'
-
 // Extend Express Request to include auth user
 declare global {
   namespace Express {
@@ -16,24 +14,34 @@ declare global {
 
 export interface AuthMiddlewareOptions {
   jwtSecret: string
-  authServiceUrl?: string
   onUnauthorized?: (req: Request, res: Response) => void
 }
 
 /**
- * Express middleware to verify JWT from auth_token cookie.
+ * Extract Bearer token from Authorization header.
+ */
+function extractBearerToken(req: Request): string | null {
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7)
+  }
+  return null
+}
+
+/**
+ * Express middleware to verify JWT from Authorization Bearer header.
  * Attaches authUser and tokenPayload to request.
  * 
  * Usage:
  * ```typescript
- * import { authMiddleware } from './shared/middleware'
+ * import { authMiddleware } from 'nicefox-auth'
  * 
  * app.use('/api', authMiddleware({ jwtSecret: process.env.JWT_SECRET }))
  * ```
  */
 export function authMiddleware(options: AuthMiddlewareOptions): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const token = req.cookies?.[COOKIE_NAME]
+    const token = extractBearerToken(req)
 
     if (!token) {
       if (options.onUnauthorized) {
@@ -92,7 +100,7 @@ export function requireAdmin(): RequestHandler {
  */
 export function optionalAuthMiddleware(options: Pick<AuthMiddlewareOptions, 'jwtSecret'>): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const token = req.cookies?.[COOKIE_NAME]
+    const token = extractBearerToken(req)
 
     if (token) {
       const payload = verifyToken(token, options.jwtSecret)
@@ -110,11 +118,13 @@ export function optionalAuthMiddleware(options: Pick<AuthMiddlewareOptions, 'jwt
   }
 }
 
+const AUTH_SERVICE_URL = 'https://auth.nicefox.net'
+
 /**
  * Helper to get login URL for redirecting unauthenticated users.
  */
-export function getLoginUrl(authServiceUrl: string, redirectUrl?: string): string {
-  const base = `${authServiceUrl}/login`
+export function getLoginUrl(redirectUrl?: string): string {
+  const base = `${AUTH_SERVICE_URL}/login`
   if (redirectUrl) {
     return `${base}?redirect=${encodeURIComponent(redirectUrl)}`
   }

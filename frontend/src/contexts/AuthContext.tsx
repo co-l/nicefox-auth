@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { getCurrentUser, logout as apiLogout } from '../services/api'
+import { getCurrentUser, logout as apiLogout, setToken, getToken, clearToken } from '../services/api'
 import type { AuthUser } from '../types'
 
 interface AuthContextType {
   user: AuthUser | null
   loading: boolean
-  logout: () => Promise<void>
+  logout: () => void
   refreshUser: () => Promise<void>
   isAdmin: boolean
 }
@@ -22,17 +22,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser)
     } catch {
       setUser(null)
+      clearToken()
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    refreshUser()
+    // Check for token in URL (returning from OAuth)
+    const params = new URLSearchParams(window.location.search)
+    const tokenFromUrl = params.get('token')
+    
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl)
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+
+    // Only try to get user if we have a token
+    if (getToken()) {
+      refreshUser()
+    } else {
+      setLoading(false)
+    }
   }, [])
 
-  const logout = async () => {
-    await apiLogout()
+  const logout = () => {
+    apiLogout()
     setUser(null)
   }
 

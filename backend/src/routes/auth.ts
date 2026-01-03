@@ -6,7 +6,6 @@ import {
   exchangeCodeForTokens,
   getGoogleUserInfo,
   generateJwt,
-  getCookieOptions,
 } from '../services/auth.js'
 import {
   createOrUpdateUser,
@@ -19,10 +18,9 @@ import { extractDomainFromUrl, getSecretForDomain } from '../services/jwtSecrets
 const SALT_ROUNDS = 10
 
 const router = Router()
-const COOKIE_NAME = 'auth_token'
 
 // Store state -> redirect URL mapping (in production, use Redis or similar)
-const stateStore = new Map<string, { redirectUrl: string; domain: string; tokenInUrl: boolean; expiresAt: number }>()
+const stateStore = new Map<string, { redirectUrl: string; domain: string; expiresAt: number }>()
 
 // Clean up expired states periodically
 setInterval(() => {
@@ -37,7 +35,6 @@ setInterval(() => {
 // GET /api/auth/google - Initiate Google OAuth flow
 router.get('/google', (req: Request, res: Response) => {
   const redirectUrl = req.query.redirect as string | undefined
-  const tokenInUrl = req.query.token_in_url === 'true'
 
   // Validate redirect URL
   let finalRedirect = config.frontendUrl
@@ -62,7 +59,6 @@ router.get('/google', (req: Request, res: Response) => {
   stateStore.set(state, {
     redirectUrl: finalRedirect,
     domain,
-    tokenInUrl,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   })
 
@@ -111,19 +107,12 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     // Generate JWT with domain-specific secret
     const token = generateJwt(user, storedState.domain)
 
-    // Set cookie
-    res.cookie(COOKIE_NAME, token, getCookieOptions())
+    // Build redirect URL with token
+    const url = new URL(storedState.redirectUrl)
+    url.searchParams.set('token', token)
 
-    // Build redirect URL, optionally with token
-    let redirectUrl = storedState.redirectUrl
-    if (storedState.tokenInUrl) {
-      const url = new URL(redirectUrl)
-      url.searchParams.set('token', token)
-      redirectUrl = url.toString()
-    }
-
-    // Redirect to original URL
-    res.redirect(redirectUrl)
+    // Redirect to original URL with token
+    res.redirect(url.toString())
   } catch (error) {
     console.error('OAuth callback error:', error)
     res.redirect(`${config.frontendUrl}/login?error=auth_failed`)
@@ -134,7 +123,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // Used by auth service itself - uses request hostname for domain
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, password, name, includeToken } = req.body
+    const { email, password, name } = req.body
 
     // Validate input
     if (!email || !password || !name) {
@@ -161,13 +150,12 @@ router.post('/register', async (req: Request, res: Response) => {
     // Use request hostname as domain (auth service's own domain)
     const domain = req.hostname
 
-    // Generate JWT and set cookie
+    // Generate JWT
     const token = generateJwt(user, domain)
-    res.cookie(COOKIE_NAME, token, getCookieOptions())
 
-    // Return user without sensitive fields, optionally include token
+    // Return user without sensitive fields, always include token
     const { googleId, passwordHash: _, ...safeUser } = user
-    res.status(201).json({ user: safeUser, ...(includeToken && { token }) })
+    res.status(201).json({ user: safeUser, token })
   } catch (error) {
     console.error('Registration error:', error)
     res.status(500).json({ error: 'Registration failed' })
@@ -178,7 +166,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // Used by auth service itself - uses request hostname for domain
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password, includeToken } = req.body
+    const { email, password } = req.body
 
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' })
@@ -211,13 +199,12 @@ router.post('/login', async (req: Request, res: Response) => {
     // Use request hostname as domain (auth service's own domain)
     const domain = req.hostname
 
-    // Generate JWT and set cookie
+    // Generate JWT
     const token = generateJwt(user, domain)
-    res.cookie(COOKIE_NAME, token, getCookieOptions())
 
-    // Return user without sensitive fields, optionally include token
+    // Return user without sensitive fields, always include token
     const { googleId, passwordHash: _, ...safeUser } = user
-    res.json({ user: safeUser, ...(includeToken && { token }) })
+    res.json({ user: safeUser, token })
   } catch (error) {
     console.error('Login error:', error)
     res.status(500).json({ error: 'Login failed' })
@@ -225,19 +212,18 @@ router.post('/login', async (req: Request, res: Response) => {
 })
 
 // GET /api/auth/me - Get current user
-// Requires ?domain=<domain> query param to verify token with correct secret
+// Verifies token from Authorization Bearer header
 router.get('/me', async (req: Request, res: Response) => {
-  const domain = req.query.domain as string | undefined
-  if (!domain) {
-    res.status(400).json({ error: 'domain query parameter is required' })
-    return
-  }
-
-  const token = req.cookies[COOKIE_NAME]
-  if (!token) {
+  // Extract Bearer token from Authorization header
+  const authHeader = req.headers.authorization
+  if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Authentication required' })
     return
   }
+  const token = authHeader.slice(7)
+
+  // Get domain from query param or request hostname
+  const domain = (req.query.domain as string) || req.hostname
 
   // Import verifyJwt dynamically to use domain-specific verification
   const { verifyJwt } = await import('../services/auth.js')
@@ -257,24 +243,7 @@ router.get('/me', async (req: Request, res: Response) => {
 
   // Return user without sensitive fields
   const { googleId, passwordHash, ...safeUser } = user
-
-  // Optionally include token for cross-origin redirects
-  const includeToken = req.query.include_token === 'true'
-  if (includeToken) {
-    const newToken = generateJwt(user, domain)
-    res.json({ user: safeUser, token: newToken })
-  } else {
-    res.json({ user: safeUser })
-  }
-})
-
-// POST /api/auth/logout - Clear auth cookie
-router.post('/logout', (_req: Request, res: Response) => {
-  res.cookie(COOKIE_NAME, '', {
-    ...getCookieOptions(),
-    maxAge: 0,
-  })
-  res.json({ success: true })
+  res.json(safeUser)
 })
 
 export default router

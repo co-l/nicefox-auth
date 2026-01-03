@@ -1,0 +1,11 @@
+# Don't publish these to npm
+backend/
+frontend/
+src/
+.env
+.env.example
+.gitignore
+CLAUDE.md
+SPEC.md
+DEPLOY.md
+*.log

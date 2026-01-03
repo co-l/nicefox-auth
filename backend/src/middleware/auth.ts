@@ -2,12 +2,21 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyJwt } from '../services/auth.js'
 import { findUserById } from '../db/userQueries.js'
 
-const COOKIE_NAME = 'auth_token'
+/**
+ * Extract Bearer token from Authorization header.
+ */
+function extractBearerToken(req: Request): string | null {
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7)
+  }
+  return null
+}
 
 /**
  * Auth middleware that verifies JWT using domain-specific secret.
+ * Expects token in Authorization: Bearer header.
  * Uses the request hostname as the domain for secret lookup.
- * For routes that need a different domain, use authMiddlewareWithDomain instead.
  */
 export async function authMiddleware(
   req: Request,
@@ -15,7 +24,7 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    const token = req.cookies[COOKIE_NAME]
+    const token = extractBearerToken(req)
 
     if (!token) {
       res.status(401).json({ error: 'Authentication required' })
@@ -66,6 +75,7 @@ export async function adminMiddleware(
 
 /**
  * Optional auth middleware - doesn't fail if no token present.
+ * Expects token in Authorization: Bearer header.
  * Uses request hostname as domain for secret lookup.
  */
 export function optionalAuthMiddleware(
@@ -73,7 +83,7 @@ export function optionalAuthMiddleware(
   _res: Response,
   next: NextFunction
 ): void {
-  const token = req.cookies[COOKIE_NAME]
+  const token = extractBearerToken(req)
 
   if (token) {
     const domain = req.hostname

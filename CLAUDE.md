@@ -6,7 +6,7 @@ Central authentication service for `*.nicefox.net` apps.
 
 - **Frontend**: React 18 + TypeScript + Vite + Bootstrap 5
 - **Backend**: Express + TypeScript + NiceFox GraphDB
-- **Auth**: Google OAuth + JWT (httpOnly cookie on .nicefox.net)
+- **Auth**: Google OAuth + JWT (token in URL, Bearer header)
 
 ## Commands
 
@@ -23,6 +23,12 @@ cd backend && npx tsc --noEmit
 ## Project Structure
 
 ```
+src/                # npm package (published as nicefox-auth)
+├── index.ts        # Main export
+├── middleware.ts   # Express auth middleware
+├── jwt.ts          # JWT verification
+└── types.ts        # AuthUser, TokenPayload
+
 frontend/src/
 ├── pages/          # Login, Users (admin)
 ├── services/       # API calls (axios)
@@ -32,15 +38,33 @@ frontend/src/
 
 backend/src/
 ├── routes/         # auth.ts, users.ts
-├── services/       # auth.ts, user.ts
+├── services/       # auth.ts, user.ts, jwtSecrets.ts
 ├── db/             # graphdb.ts, userQueries.ts
 ├── middleware/     # auth.ts (JWT verify, admin check)
+├── cli/            # nicefox-auth-cli.ts (secret management)
 └── types/          # TypeScript interfaces
+```
 
-shared/             # Copy to client apps
-├── middleware.ts   # Express auth middleware
-├── jwt.ts          # JWT verification
-└── types.ts        # AuthUser, TokenPayload
+## npm Package
+
+The `src/` folder is published to npm as `nicefox-auth`. Client apps install it instead of copying files:
+
+```bash
+npm install nicefox-auth
+```
+
+```typescript
+import { authMiddleware, requireAdmin, getLoginUrl } from 'nicefox-auth'
+import type { AuthUser, TokenPayload } from 'nicefox-auth'
+
+app.use('/api', authMiddleware({ jwtSecret: process.env.JWT_SECRET }))
+```
+
+### Publishing
+
+```bash
+npm version patch  # or minor/major
+npm publish
 ```
 
 ## Key Concepts
@@ -48,7 +72,9 @@ shared/             # Copy to client apps
 - `Auth_User` nodes in GraphDB
 - Client apps create local user nodes linked via `authUserId`
 - **Per-app JWT secrets** - each app has its own secret, stored in `JWT_SECRETS_DIR/<domain>`
-- Per-app logout (doesn't clear shared cookie)
+- **Token-based auth** - JWT passed via `Authorization: Bearer` header (no cookies)
+- **Token in URL** - after OAuth, user is redirected with `?token=xxx`
+- **Client-side logout** - just clear localStorage and redirect to `/`
 - Global roles: `user` | `admin`
 
 ## Per-App JWT Secrets

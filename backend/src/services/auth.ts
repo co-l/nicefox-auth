@@ -102,16 +102,3 @@ export function verifyJwt(token: string, domain: string): TokenPayload | null {
     return null
   }
 }
-
-export function getCookieOptions() {
-  const isProduction = config.nodeEnv === 'production'
-  
-  return {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'lax' as const,
-    domain: config.cookieDomain === 'localhost' ? undefined : config.cookieDomain,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/',
-  }
-}

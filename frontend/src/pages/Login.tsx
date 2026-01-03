@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { getGoogleAuthUrl, login, getCurrentUserWithToken } from '../services/api'
+import { getGoogleAuthUrl, login } from '../services/api'
 import axios from 'axios'
 
 export function Login() {
@@ -16,34 +16,19 @@ export function Login() {
 
   const urlError = searchParams.get('error')
   const redirect = searchParams.get('redirect')
-  const tokenInUrl = searchParams.get('token_in_url') === 'true'
 
   useEffect(() => {
     if (!loading && user) {
       if (redirect) {
-        // If token_in_url is requested, fetch the token and append it to the redirect URL
-        if (tokenInUrl) {
-          getCurrentUserWithToken().then((result) => {
-            if (result?.token) {
-              const url = new URL(redirect)
-              url.searchParams.set('token', result.token)
-              window.location.href = url.toString()
-            } else {
-              // Fallback if token fetch fails
-              window.location.href = redirect
-            }
-          })
-        } else {
-          window.location.href = redirect
-        }
+        window.location.href = redirect
       } else {
         navigate('/dashboard')
       }
     }
-  }, [user, loading, navigate, redirect, tokenInUrl])
+  }, [user, loading, navigate, redirect])
 
   const handleGoogleLogin = () => {
-    window.location.href = getGoogleAuthUrl(redirect || undefined, tokenInUrl)
+    window.location.href = getGoogleAuthUrl(redirect || undefined)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -52,16 +37,13 @@ export function Login() {
     setSubmitting(true)
 
     try {
-      const { token } = await login(email, password, tokenInUrl)
+      const { token } = await login(email, password)
       await refreshUser()
       if (redirect) {
-        let redirectUrl = redirect
-        if (tokenInUrl && token) {
-          const url = new URL(redirect)
-          url.searchParams.set('token', token)
-          redirectUrl = url.toString()
-        }
-        window.location.href = redirectUrl
+        // Append token to redirect URL
+        const url = new URL(redirect)
+        url.searchParams.set('token', token)
+        window.location.href = url.toString()
       } else {
         navigate('/dashboard')
       }
@@ -196,7 +178,7 @@ export function Login() {
 
               <div className="text-center mt-4">
                 <span className="text-muted">Don't have an account? </span>
-                <Link to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}${tokenInUrl ? '&token_in_url=true' : ''}` : '/register'}>
+                <Link to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'}>
                   Create one
                 </Link>
               </div>
