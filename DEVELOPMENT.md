@@ -23,6 +23,14 @@ For local development, use the hardcoded dev secret:
 JWT_SECRET=nicefox-dev-secret-do-not-use-in-production
 ```
 
+Or use the helper function which auto-detects localhost:
+
+```typescript
+import { authMiddleware, getJwtSecret } from 'nicefox-auth'
+
+app.use('/api', authMiddleware({ jwtSecret: getJwtSecret() }))
+```
+
 This matches what the auth service uses for `localhost` - no additional setup needed.
 
 ### Production

@@ -45,6 +45,14 @@ Clients send the token via `Authorization: Bearer <token>` header.
 | Development | `nicefox-dev-secret-do-not-use-in-production` |
 | Production  | Provided by nicefox-deploy |
 
+Or use the helper that auto-detects localhost:
+
+```typescript
+import { authMiddleware, getJwtSecret } from 'nicefox-auth'
+
+app.use('/api', authMiddleware({ jwtSecret: getJwtSecret() }))
+```
+
 ## Frontend (React)
 
 ### Auth Hook

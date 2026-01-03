@@ -3,7 +3,7 @@ import path from 'path'
 import { config } from '../config.js'
 
 // Hardcoded secret for zero-conf local development
-const LOCALHOST_JWT_SECRET = 'nicefox-local-dev-secret-do-not-use-in-production'
+const LOCALHOST_JWT_SECRET = 'nicefox-dev-secret-do-not-use-in-production'
 
 // In-memory cache - read once, keep forever (until restart)
 const secretCache = new Map<string, string>()
