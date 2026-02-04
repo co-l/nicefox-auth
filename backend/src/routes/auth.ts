@@ -42,6 +42,22 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 })
 
+const tokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 token exchanges per window per IP
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const meLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // 60 requests per window per IP
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 // Store state -> redirect URL mapping (in production, use Redis or similar)
 const stateStore = new Map<string, { redirectUrl: string; domain: string; expiresAt: number }>()
 
@@ -73,7 +89,7 @@ router.get('/google', (req: Request, res: Response) => {
   // Extract domain and verify we have a secret for it
   const domain = extractDomainFromUrl(finalRedirect)
   if (!getSecretForDomain(domain)) {
-    res.status(400).json({ error: `No JWT secret configured for domain: ${domain}` })
+    res.status(400).json({ error: 'Invalid redirect URL' })
     return
   }
 
@@ -159,10 +175,10 @@ router.post('/register', registerLimiter, async (req: Request, res: Response) =>
       return
     }
 
-    // Check if email already exists
+    // Check if email already exists (use generic error to prevent enumeration)
     const existingUser = await findUserByEmail(email)
     if (existingUser) {
-      res.status(400).json({ error: 'Email already registered' })
+      res.status(400).json({ error: 'Registration failed. Please check your details and try again.' })
       return
     }
 
@@ -229,7 +245,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
 
 // POST /api/auth/token - Get a token for a specific redirect domain
 // Requires valid auth token, returns new token signed for target domain
-router.post('/token', async (req: Request, res: Response) => {
+router.post('/token', tokenLimiter, async (req: Request, res: Response) => {
   try {
     // Extract Bearer token from Authorization header
     const authHeader = req.headers.authorization
@@ -263,7 +279,7 @@ router.post('/token', async (req: Request, res: Response) => {
     const domain = extractDomainFromUrl(redirect)
     const secret = getSecretForDomain(domain)
     if (!secret) {
-      res.status(400).json({ error: `No JWT secret configured for domain: ${domain}` })
+      res.status(400).json({ error: 'Invalid redirect URL' })
       return
     }
 
@@ -286,7 +302,7 @@ router.post('/token', async (req: Request, res: Response) => {
 
 // GET /api/auth/me - Get current user
 // Verifies token from Authorization Bearer header
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', meLimiter, async (req: Request, res: Response) => {
   // Extract Bearer token from Authorization header
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
@@ -296,7 +312,13 @@ router.get('/me', async (req: Request, res: Response) => {
   const token = authHeader.slice(7)
 
   // Get domain from query param or request hostname
-  const domain = (req.query.domain as string) || req.hostname
+  // Validate domain to prevent path traversal attacks
+  const rawDomain = (req.query.domain as string) || req.hostname
+  if (rawDomain.includes('/') || rawDomain.includes('\\') || rawDomain.includes('..')) {
+    res.status(400).json({ error: 'Invalid domain' })
+    return
+  }
+  const domain = rawDomain
 
   // Import verifyJwt dynamically to use domain-specific verification
   const { verifyJwt } = await import('../services/auth.js')

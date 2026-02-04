@@ -80,6 +80,7 @@ export function generateJwt(user: AuthUser, targetDomain: string): string {
   }
 
   return jwt.sign(payload, secret, {
+    algorithm: 'HS256',
     expiresIn: config.jwt.expiresIn,
   } as SignOptions)
 }
@@ -97,7 +98,7 @@ export function verifyJwt(token: string, domain: string): TokenPayload | null {
   }
 
   try {
-    return jwt.verify(token, secret) as TokenPayload
+    return jwt.verify(token, secret, { algorithms: ['HS256'] }) as TokenPayload
   } catch {
     return null
   }
