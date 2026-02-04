@@ -14,7 +14,7 @@ router.get('/', async (_req: Request, res: Response) => {
     const users = await listAllUsers()
     
     // Remove sensitive fields
-    const safeUsers = users.map(({ googleId, ...user }) => user)
+    const safeUsers = users.map(({ googleId, passwordHash, ...user }) => user)
     res.json({ users: safeUsers })
   } catch (error) {
     console.error('Error listing users:', error)
@@ -32,7 +32,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return
     }
 
-    const { googleId, ...safeUser } = user
+    const { googleId, passwordHash, ...safeUser } = user
     res.json({ user: safeUser })
   } catch (error) {
     console.error('Error getting user:', error)
@@ -63,7 +63,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
       return
     }
 
-    const { googleId, ...safeUser } = user
+    const { googleId, passwordHash, ...safeUser } = user
     res.json({ user: safeUser })
   } catch (error) {
     console.error('Error updating user:', error)

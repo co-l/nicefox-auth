@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express'
+import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcrypt'
 import { config, isValidRedirectUrl } from '../config.js'
 import {
@@ -18,7 +19,28 @@ import { extractDomainFromUrl, getSecretForDomain } from '../services/jwtSecrets
 
 const SALT_ROUNDS = 10
 
+// Pre-computed dummy hash for timing-safe login (prevents user enumeration via timing)
+const DUMMY_HASH = '$2b$10$nhlTd3uc3HFLy5YeAHgQKezGVIK0zanavpvnW4ctpKVw9ILKFDFzy'
+
 const router = Router()
+
+// Rate limiting for authentication endpoints
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.body?.email || req.ip || 'unknown',
+})
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 registrations per hour per IP
+  message: { error: 'Too many registration attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 // Store state -> redirect URL mapping (in production, use Redis or similar)
 const stateStore = new Map<string, { redirectUrl: string; domain: string; expiresAt: number }>()
@@ -122,7 +144,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
 // POST /api/auth/register - Register with email/password
 // Used by auth service itself - uses request hostname for domain
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', registerLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body
 
@@ -165,7 +187,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
 // POST /api/auth/login - Login with email/password
 // Used by auth service itself - uses request hostname for domain
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
 
@@ -176,20 +198,13 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Find user by email
     const user = await findUserByEmail(email)
-    if (!user) {
-      res.status(401).json({ error: 'Invalid email or password' })
-      return
-    }
 
-    // Check if user has a password (might be Google-only account)
-    if (!user.passwordHash) {
-      res.status(401).json({ error: 'This account uses Google sign-in' })
-      return
-    }
+    // Timing-safe: always run bcrypt comparison to prevent user enumeration
+    const hashToCompare = user?.passwordHash || DUMMY_HASH
+    const isValid = await bcrypt.compare(password, hashToCompare)
 
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.passwordHash)
-    if (!isValid) {
+    if (!user || !user.passwordHash || !isValid) {
+      // Unified error message for all failure cases (user not found, Google-only, wrong password)
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
