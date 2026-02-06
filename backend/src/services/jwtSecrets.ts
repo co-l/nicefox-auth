@@ -38,12 +38,10 @@ function isValidDomain(domain: string): boolean {
  * - Returns null if no secret file exists (request should be rejected)
  */
 export function getSecretForDomain(domain: string): string | null {
-  // Localhost gets hardcoded secret for zero-conf local dev
+  // Localhost gets hardcoded dev secret — allows local development of client
+  // apps against the production auth service. This secret is only used for
+  // tokens targeting localhost and cannot access any production service.
   if (domain === 'localhost') {
-    if (config.nodeEnv === 'production') {
-      console.warn('WARNING: Rejecting localhost domain in production mode — potential Host header attack')
-      return null
-    }
     return LOCALHOST_JWT_SECRET
   }
 
