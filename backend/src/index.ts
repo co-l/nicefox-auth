@@ -12,11 +12,15 @@ const app = express()
 app.disable('x-powered-by')
 
 // Security headers
+// NOTE: Nginx also sets X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection.
+// These Express headers are authoritative. Remove the duplicates from the nginx config
+// to avoid conflicting values (e.g., DENY vs SAMEORIGIN for X-Frame-Options).
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.setHeader('Content-Security-Policy', "default-src 'none'")
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
   if (config.nodeEnv === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   }
@@ -24,11 +28,15 @@ app.use((_req, res, next) => {
 })
 
 // Middleware
+const corsOrigins = [config.frontendUrl]
+if (config.nodeEnv !== 'production') {
+  corsOrigins.push('http://localhost:5175', 'http://localhost:5174')
+}
 app.use(cors({
-  origin: [config.frontendUrl, 'http://localhost:5175', 'http://localhost:5174'],
+  origin: corsOrigins,
   credentials: true,
 }))
-app.use(express.json())
+app.use(express.json({ limit: '16kb' }))
 app.use(cookieParser())
 
 // Routes
